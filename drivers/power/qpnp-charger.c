@@ -1431,7 +1431,8 @@ qpnp_chg_vbatdet_lo_irq_handler(int irq, void *_chip)
 
 	pr_debug("chg_done chg_sts: 0x%x triggered\n", chg_sts);
 	if (!chip->charging_disabled && (chg_sts & FAST_CHG_ON_IRQ)) {
-		schedule_delayed_work(&chip->eoc_work,
+		queue_delayed_work(system_power_efficient_wq,
+		&chip->eoc_work,
 			msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 		pm_stay_awake(chip->dev);
 	}
@@ -1476,7 +1477,8 @@ qpnp_chg_usb_chg_gone_irq_handler(int irq, void *_chip)
 		qpnp_chg_charge_en(chip, 0);
 
 		qpnp_chg_force_run_on_batt(chip, 1);
-		schedule_delayed_work(&chip->arb_stop_work,
+		queue_delayed_work(system_power_efficient_wq,
+		&chip->arb_stop_work,
 			msecs_to_jiffies(ARB_STOP_WORK_MS));
 	}
 
@@ -1799,7 +1801,8 @@ sec_qpnp_usbin_valid_work(struct work_struct *work)
 			wait_muic_event = 0;
 			pr_info("%s connected vbus \n",__func__);
 		#ifndef CONFIG_BATTERY_SAMSUNG
-			schedule_delayed_work(&chip->eoc_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&chip->eoc_work,
 				msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 			schedule_work(&chip->soc_check_work);
 		#endif
@@ -1859,7 +1862,8 @@ qpnp_chg_coarse_det_usb_irq_handler(int irq, void *_chip)
 				return rc;
 			}
 			ovp_ctl = ovp_ctl & USB_VALID_DEBOUNCE_TIME_MASK;
-			schedule_delayed_work(&chip->usbin_health_check,
+			queue_delayed_work(system_power_efficient_wq,
+			&chip->usbin_health_check,
 					msecs_to_jiffies(debounce[ovp_ctl]));
 		} else {
 			/* usb coarse-det rising edge, set the usb psy health
@@ -1932,7 +1936,8 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 	if (host_mode)
 		return IRQ_HANDLED;
 
-	schedule_delayed_work(&chip->usbin_valid_work,
+	queue_delayed_work(system_power_efficient_wq,
+	&chip->usbin_valid_work,
 			msecs_to_jiffies(USBIN_VALID_WORK_MS));
 
 	return IRQ_HANDLED;
@@ -2020,7 +2025,8 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 			}
 
 			#ifndef CONFIG_BATTERY_SAMSUNG
-			schedule_delayed_work(&chip->eoc_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&chip->eoc_work,
 				msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 			schedule_work(&chip->soc_check_work);
 			#endif
@@ -2215,7 +2221,8 @@ qpnp_chg_dc_dcin_valid_irq_handler(int irq, void *_chip)
 			chip->chg_done = false;
 		} else {
 			#ifndef CONFIG_BATTERY_SAMSUNG
-			schedule_delayed_work(&chip->eoc_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&chip->eoc_work,
 				msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 			schedule_work(&chip->soc_check_work);
 			#endif
@@ -2378,7 +2385,8 @@ qpnp_chg_chgr_chg_fastchg_irq_handler(int irq, void *_chip)
 
 	#ifndef CONFIG_BATTERY_SAMSUNG	
 			if (!chip->charging_disabled) {
-				schedule_delayed_work(&chip->eoc_work,
+				queue_delayed_work(system_power_efficient_wq,
+				&chip->eoc_work,
 					msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 				pm_stay_awake(chip->dev);
 			}
@@ -4102,7 +4110,8 @@ qpnp_eoc_work(struct work_struct *work)
 	}
 
 check_again_later:
-	schedule_delayed_work(&chip->eoc_work,
+	queue_delayed_work(system_power_efficient_wq,
+	&chip->eoc_work,
 		msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 	return;
 
@@ -6280,7 +6289,8 @@ qpnp_charger_probe(struct spmi_device *spmi)
 		power_supply_set_online(chip->usb_psy, 1);
 	#endif
 
-	schedule_delayed_work(&chip->aicl_check_work,
+	queue_delayed_work(system_power_efficient_wq,
+	&chip->aicl_check_work,
 		msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 	pr_info("success chg_dis = %d, bpd = %d, usb = %d, dc = %d b_health = %d batt_present = %d\n",
 			chip->charging_disabled,

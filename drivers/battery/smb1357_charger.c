@@ -598,7 +598,8 @@ static void smb1357_syson_sensing(struct i2c_client *client,
 	smb1357data->syson_trigger_onoff = onoff;
 #ifdef ENABLE_SYSON_TRIGGER
 	cancel_delayed_work(&smb1357data->syson_trigger_work);
-	schedule_delayed_work(&smb1357data->syson_trigger_work,
+	queue_delayed_work(system_power_efficient_wq,
+	&smb1357data->syson_trigger_work,
 		msecs_to_jiffies(delay));
 #endif
 	dev_dbg(&client->dev,"%s, delay[%d] on = [%d]\n",
@@ -1212,7 +1213,8 @@ static int smb1357_get_charging_health(struct i2c_client *client)
 					if ((smb1357data->pogo_det_count == 0)&&
 						(smb1357data->pogo_status != DCIN_NONE)) {
 						cancel_delayed_work(&charger->isr_work);
-						schedule_delayed_work(&charger->isr_work,
+						queue_delayed_work(system_power_efficient_wq,
+						&charger->isr_work,
 							msecs_to_jiffies(0));
 					}
 				}
@@ -1398,7 +1400,8 @@ static void smb1357_charger_function_control(
 					wake_lock(&smb1357data->chg_wake_lock);
 					cancel_delayed_work(&smb1357data->pogo_det_work);
 					smb1357data->pogo_det_count = 3;
-					schedule_delayed_work(&smb1357data->pogo_det_work,
+					queue_delayed_work(system_power_efficient_wq,
+					&smb1357data->pogo_det_work,
 						msecs_to_jiffies(200));
 					dev_dbg(&client->dev,"%s, send pogo detection\n",__func__);
 				}
@@ -1665,7 +1668,8 @@ static void smb1357_charger_function_control(
 		if (charger->cable_type == POWER_SUPPLY_TYPE_MAINS){
 			smb1357data->hvdcp_det_count = 3;
 			cancel_delayed_work(&smb1357data->hvdcp_det_work);
-			schedule_delayed_work(&smb1357data->hvdcp_det_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&smb1357data->hvdcp_det_work,
 				msecs_to_jiffies(3000));
 		}
 		else if (charger->cable_type == POWER_SUPPLY_TYPE_POGODOCK) {
@@ -2410,7 +2414,8 @@ static void smb1357_chg_isr_work(struct work_struct *work)
 			smb1357_syson_sensing(client, 10, true);
 			cancel_delayed_work(&smb1357data->pogo_det_work);
 			smb1357data->pogo_det_count = 3;
-			schedule_delayed_work(&smb1357data->pogo_det_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&smb1357data->pogo_det_work,
 				msecs_to_jiffies(200));
 		}
 	}
@@ -2438,7 +2443,8 @@ static irqreturn_t smb1357_chg_irq_thread(int irq, void *irq_data)
 	struct sec_charger_info *charger = irq_data;
 
 	cancel_delayed_work(&charger->isr_work);
-	schedule_delayed_work(&charger->isr_work, msecs_to_jiffies(0));
+	queue_delayed_work(system_power_efficient_wq,
+	&charger->isr_work, msecs_to_jiffies(0));
 
 	return IRQ_HANDLED;
 }
@@ -2470,7 +2476,8 @@ static irqreturn_t smb1357_detbat_irq_thread(int irq, void *irq_data)
 	struct smb1357_charger_data *smb1357data =
 			dev_get_drvdata(&charger->client->dev);
 
-	schedule_delayed_work(&smb1357data->detbat_work, msecs_to_jiffies(0));
+	queue_delayed_work(system_power_efficient_wq,
+	&smb1357data->detbat_work, msecs_to_jiffies(0));
 
 	return IRQ_HANDLED;
 }
@@ -2826,7 +2833,8 @@ static void smb1357_charger_hvdcp_det_work(struct work_struct *work)
 			if (smb1357data->hvdcp_det_count > 0){
 				smb1357data->hvdcp_det_count--;
 				cancel_delayed_work(&smb1357data->hvdcp_det_work);
-				schedule_delayed_work(&smb1357data->hvdcp_det_work,
+				queue_delayed_work(system_power_efficient_wq,
+				&smb1357data->hvdcp_det_work,
 					msecs_to_jiffies(1000));
 			}
 		}
@@ -3051,7 +3059,8 @@ static void smb1357_charger_pogo_det_work(struct work_struct *work)
 	else {
 		if (smb1357data->pogo_det_count > 0) {
 			smb1357data->pogo_det_count--;
-			schedule_delayed_work(&smb1357data->pogo_det_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&smb1357data->pogo_det_work,
 				msecs_to_jiffies(50));
 		}
 		else {
@@ -3117,7 +3126,8 @@ static void smb1357_charger_init_work(struct work_struct *work)
 			wake_lock(&smb1357data->chg_wake_lock);
 			cancel_delayed_work(&smb1357data->pogo_det_work);
 			smb1357data->pogo_det_count = 3;
-			schedule_delayed_work(&smb1357data->pogo_det_work,
+			queue_delayed_work(system_power_efficient_wq,
+			&smb1357data->pogo_det_work,
 				msecs_to_jiffies(200));
 		}
 	}
@@ -3162,7 +3172,8 @@ static void smb1357_charger_debug_work(struct work_struct *work)
 				addr, buf_a, addr+0x40, buf_b);
 	}
 	dev_dbg(&client->dev,"============================================\n");
-	schedule_delayed_work(&smb1357data->debug_work, msecs_to_jiffies(10000));
+	queue_delayed_work(system_power_efficient_wq,
+	&smb1357data->debug_work, msecs_to_jiffies(10000));
 	return;
 }
 #endif
@@ -3346,10 +3357,12 @@ static int smb1357_charger_probe(
 				smb1357_syson_trigger_work);
 	INIT_DELAYED_WORK(&smb1357data->init_work,
 				smb1357_charger_init_work);
-	schedule_delayed_work(&smb1357data->init_work, msecs_to_jiffies(3000));
+	queue_delayed_work(system_power_efficient_wq,
+	&smb1357data->init_work, msecs_to_jiffies(3000));
 #if defined(USE_DEBUG_WORK)
 	INIT_DELAYED_WORK(&smb1357data->debug_work, smb1357_charger_debug_work);
-	schedule_delayed_work(&smb1357data->debug_work, msecs_to_jiffies(5000));
+	queue_delayed_work(system_power_efficient_wq,
+	&smb1357data->debug_work, msecs_to_jiffies(5000));
 #endif
 
 #if defined(TIMER_FORCE_BLOCK)
@@ -3508,7 +3521,8 @@ static int max77804k_tiny_charger_probe(struct platform_device *pdev)
 #endif
 		max77804k_tiny_irq_batp = 0;
 
-	schedule_delayed_work(&max77804k_tiny_charger->tiny_init_work,
+	queue_delayed_work(system_power_efficient_wq,
+	&max77804k_tiny_charger->tiny_init_work,
 					msecs_to_jiffies(3000));
 err_free:
 	return ret;

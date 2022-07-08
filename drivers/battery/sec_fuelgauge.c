@@ -322,7 +322,8 @@ static irqreturn_t sec_fg_irq_thread(int irq, void *irq_data)
 		else
 			__pm_relax(&fuelgauge->fuel_alert_ws);
 
-		schedule_delayed_work(&fuelgauge->isr_work, 0);
+		queue_delayed_work(system_power_efficient_wq,
+		&fuelgauge->isr_work, 0);
 
 		fuelgauge->is_fuel_alerted = fuel_alerted;
 	}

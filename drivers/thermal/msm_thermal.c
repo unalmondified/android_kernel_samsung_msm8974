@@ -1410,7 +1410,7 @@ static void __ref msm_therm_temp_log(struct work_struct *work)
 		}
 		pr_info("%s", buffer);
 	}
-	schedule_delayed_work(&temp_log_work,
+	queue_delayed_work(system_power_efficient_wq, &temp_log_work,
 				HZ*5); //For every 5 seconds log the temperature values of all the msm thermistors.
 }
 
@@ -2298,7 +2298,7 @@ int msm_thermal_init(struct msm_thermal_data *pdata)
 		pr_err("cannot register cpufreq notifier. err:%d\n", ret);
 
 	INIT_DELAYED_WORK(&check_temp_work, check_temp);
-	schedule_delayed_work(&check_temp_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &check_temp_work, 0);
 
 	if (num_possible_cpus() > 1)
 		register_cpu_notifier(&msm_thermal_cpu_notifier);
@@ -3389,7 +3389,7 @@ static struct platform_driver msm_thermal_device_driver = {
 int __init msm_thermal_device_init(void)
 {
 	INIT_DELAYED_WORK(&temp_log_work, msm_therm_temp_log);
-	schedule_delayed_work(&temp_log_work, HZ*2);
+	queue_delayed_work(system_power_efficient_wq, &temp_log_work, HZ*2);
 
 	return platform_driver_register(&msm_thermal_device_driver);
 }
